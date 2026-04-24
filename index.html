@@ -1258,6 +1258,32 @@
       }
     }
     checkSession();
+    // Check for OAuth errors from home.html redirect
+const authError = localStorage.getItem('auth_error');
+if (authError) {
+  showToast(authError, 'error');
+  localStorage.removeItem('auth_error');
+}
+
+// Update handleGoogleSignIn to check for conflicts after redirect
+async function handleOAuthCallback() {
+  const hash = window.location.hash;
+  if (hash.includes('access_token') || hash.includes('error')) {
+    // Supabase handles the hash automatically
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+    if (session) {
+      window.location.href = 'home.html';
+    }
+  }
+}
+
+// Call on load
+handleOAuthCallback();
+    
   </script>
 </body>
 </html>
