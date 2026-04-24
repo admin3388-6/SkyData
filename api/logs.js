@@ -8,6 +8,15 @@ const supabase = createClient(
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_DOMAIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  if (action === 'check') {
+  const { data: isAdmin } = await supabase
+    .from('admin_list')
+    .select('email')
+    .eq('email', adminEmail)
+    .single();
+  
+  return res.status(200).json({ isAdmin: !!isAdmin });
+  }
   
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
