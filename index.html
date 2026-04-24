@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkyData Auth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #00ffcc;
+            --dark-green: #0a2e1f;
+            --bg-black: #050505;
+            --glass-bg: rgba(10, 46, 31, 0.6);
+            --glass-border: rgba(0, 255, 204, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at center, var(--dark-green) 0%, var(--bg-black) 100%);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background Grid */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(var(--glass-border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        /* Landscape Lock Overlay */
+        #landscape-lock {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-black);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #landscape-lock svg { width: 60px; height: 60px; fill: var(--neon-green); margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
+        @media screen and (orientation: portrait) {
+            #landscape-lock { display: flex; }
+            .auth-container { display: none; }
+        }
+
+        /* Glassmorphism Card */
+        .auth-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 800px;
+            height: 90%;
+            max-height: 400px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .panel {
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        /* Panel States */
+        #main-panel { transform: translateX(0); opacity: 1; }
+        #login-panel { transform: translateX(100%); opacity: 0; pointer-events: none; }
+        #register-panel { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+
+        .active-panel { transform: translateX(0) !important; opacity: 1 !important; pointer-events: all !important; z-index: 20; }
+
+        h1 { font-size: 28px; font-weight: 900; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--neon-green); }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            max-width: 320px;
+            padding: 14px 20px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover { background: var(--glass-border); box-shadow: 0 0 15px var(--glass-border); transform: translateY(-2px); }
+        
+        .btn-outline { background: transparent; border: 1px dashed var(--neon-green); color: var(--neon-green); }
+        .btn-outline:hover { background: rgba(0, 255, 204, 0.1); }
+
+        .btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* Inputs */
+        .input-group { width: 100%; max-width: 320px; margin-bottom: 15px; position: relative; }
+        .input-group input {
+            width: 100%; padding: 12px 15px; background: rgba(0, 0, 0, 0.4); border: 1px solid #333;
+            color: white; border-radius: 6px; outline: none; font-family: sans-serif; transition: 0.3s;
+        }
+        .input-group input:focus { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0, 255, 204, 0.2); }
+        
+        .link { color: var(--neon-green); font-size: 12px; cursor: pointer; text-decoration: none; margin-top: 10px; transition: 0.3s; }
+        .link:hover { text-shadow: 0 0 8px var(--neon-green); }
+
+        .back-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .back-btn:hover { color: var(--neon-green); }
+    </style>
+</head>
+<body>
+
+    <div id="landscape-lock">
+        <svg viewBox="0 0 24 24"><path d="M16 1H8C6.9 1 6 1.9 6 3V21C6 22.1 6.9 23 8 23H16C17.1 23 18 22.1 18 21V3C18 1.9 17.1 1 16 1ZM16 19H8V5H16V19ZM13.5 21H10.5V20H13.5V21Z"/></svg>
+        <h2 style="color: var(--neon-green); font-size: 1.2rem;">LANDSCAPE REQUIRED</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">Rotate your device to access the platform.</p>
+    </div>
+
+    <div class="auth-container">
+        
+        <div id="main-panel" class="panel active-panel">
+            <h1>SKYDATA AUTH</h1>
+            
+            <button class="btn" onclick="alert('OAuth Logic in Phase 2')">
+                <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                SIGN IN WITH GOOGLE
+            </button>
+
+            <button class="btn" onclick="switchPanel('login-panel')">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/></svg>
+                SIGN IN WITH EMAIL
+            </button>
+
+            <button class="btn btn-outline" onclick="switchPanel('register-panel')">
+                CREATE NEW ACCOUNT
+            </button>
+        </div>
+
+        <div id="login-panel" class="panel">
+            <button class="back-btn" onclick="switchPanel('main-panel')">◀ BACK</button>
+            <h1>SYSTEM LOGIN</h1>
+            
+            <div class="input-group">
+                <input type="email" placeholder="Email Address" required>
+            </div>
+            <div class="input-group">
+                <input type="password" placeholder="Password" required>
+            </div>
+            
+            <div style="width: 100%; max-width: 320px; height: 50px; border: 1px dashed var(--glass-border); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted);">
+                [reCAPTCHA v2 Widget Space]
+            </div>
+
+            <button class="btn" style="background: var(--neon-green); color: var(--bg-black);">AUTHENTICATE</button>
+            
+            <a class="link" style="margin-top: 5px;">Forgot Password?</a>
+        </div>
+
+        <div id="register-panel" class="panel">
+            <button class="back-btn" onclick="switchPanel('main-panel')">◀ BACK</button>
+            <h1 style="font-size: 22px;">INITIALIZE ACCOUNT</h1>
+            
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
+                <div class="input-group"><input type="text" placeholder="Username" required></div>
+                <div class="input-group"><input type="email" placeholder="Email Address" required></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
+                <div class="input-group"><input type="password" placeholder="Password" required></div>
+                <div class="input-group"><input type="password" placeholder="Confirm" required></div>
+            </div>
+
+            <label style="font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; margin-bottom: 15px; max-width: 320px; text-align: left;">
+                <input type="checkbox" required> I agree to the Terms of Service and Privacy Policy
+            </label>
+
+            <button class="btn" style="background: var(--neon-green); color: var(--bg-black);">DEPLOY ACCOUNT</button>
+        </div>
+
+    </div>
+
+    <script>
+        function switchPanel(targetId) {
+            // Remove active class from all panels
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active-panel');
+            });
+            // Add active class to target
+            document.getElementById(targetId).classList.add('active-panel');
+        }
+    </script>
+</body>
+</html>
