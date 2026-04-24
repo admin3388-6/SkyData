@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      direction: rtl;
+      padding: 20px;
+    }
+    .admin-header {
+      background: linear-gradient(135deg, #0d5c2e, #1a8b45);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-header h1 { font-size: 20px; color: white; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #16213e;
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #2a2a4a;
+    }
+    .stat-card .number { font-size: 28px; font-weight: 700; color: #2ecc71; }
+    .stat-card .label { font-size: 12px; color: #999; margin-top: 5px; }
+    .filters {
+      background: #16213e;
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .filters input, .filters select {
+      padding: 10px;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      background: #0f3460;
+      color: white;
+      font-size: 13px;
+      flex: 1;
+      min-width: 120px;
+    }
+    .filters button {
+      padding: 10px 20px;
+      background: #2ecc71;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .logs-table {
+      width: 100%;
+      overflow-x: auto;
+      background: #16213e;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: #0f3460;
+      padding: 12px 8px;
+      text-align: right;
+      color: #2ecc71;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #2a2a4a;
+      white-space: nowrap;
+    }
+    tr:hover td { background: rgba(46, 204, 113, 0.05); }
+    .risk-low { color: #2ecc71; }
+    .risk-medium { color: #f39c12; }
+    .risk-high { color: #e74c3c; }
+    .risk-critical { color: #ff0000; font-weight: bold; }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .pagination button {
+      padding: 8px 16px;
+      background: #0f3460;
+      color: white;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .pagination button.active { background: #2ecc71; color: #1a1a2e; }
+    .not-found {
+      display: none;
+      text-align: center;
+      padding: 100px 20px;
+    }
+    .not-found h1 { font-size: 60px; color: #2ecc71; }
+    .not-found p { color: #666; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="adminPanel">
+    <div class="admin-header">
+      <h1>📊 لوحة التحكم والسجلات</h1>
+      <button onclick="window.location.href='/home.html'" style="padding:8px 16px;background:#2ecc71;border:none;border-radius:8px;color:#1a1a2e;font-weight:600;cursor:pointer;">الرئيسية</button>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="number" id="statUsers">-</div><div class="label">المستخدمين</div></div>
+      <div class="stat-card"><div class="number" id="statNewToday">-</div><div class="label">جدد اليوم</div></div>
+      <div class="stat-card"><div class="number" id="statSessions">-</div><div class="label">جلسات نشطة</div></div>
+      <div class="stat-card"><div class="number" id="statFailed">-</div><div class="label">محاولات فاشلة</div></div>
+      <div class="stat-card"><div class="number" id="statBlocked">-</div><div class="label">IPs محظورة</div></div>
+    </div>
+
+    <div class="filters">
+      <input type="date" id="filterDateFrom" placeholder="من تاريخ">
+      <input type="date" id="filterDateTo" placeholder="إلى تاريخ">
+      <select id="filterAction">
+        <option value="">كل الإجراءات</option>
+        <option value="login_success">تسجيل دخول ناجح</option>
+        <option value="account_created">إنشاء حساب</option>
+        <option value="password_changed">تغيير كلمة السر</option>
+        <option value="country_change_detected">تغيير دولة</option>
+        <option value="logout">تسجيل خروج</option>
+      </select>
+      <select id="filterRisk">
+        <option value="">كل المستويات</option>
+        <option value="low">منخفض</option>
+        <option value="medium">متوسط</option>
+        <option value="high">عالي</option>
+        <option value="critical">حرج</option>
+      </select>
+      <input type="text" id="filterEmail" placeholder="بحث بالإيميل">
+      <button onclick="loadLogs()">بحث</button>
+    </div>
+
+    <div class="logs-table">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>المستخدم</th>
+            <th>الإجراء</th>
+            <th>IP</th>
+            <th>الدولة</th>
+            <th>الجهاز</th>
+            <th>المخاطر</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr><td colspan="7" style="text-align:center;padding:30px;">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <div class="not-found" id="notFoundPage">
+    <h1>404</h1>
+    <p>الصفحة غير موجودة</p>
+  </div>
+
+  <script>
+    const API_BASE = 'https://slime-secure-api.onrender.com';
+    let currentPage = 1;
+
+    async function checkAdmin() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/stats`, { credentials: 'include' });
+        if (res.status === 404 || res.status === 401) {
+          document.getElementById('adminPanel').style.display = 'none';
+          document.getElementById('notFoundPage').style.display = 'block';
+          return false;
+        }
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('statUsers').textContent = data.stats.totalUsers || 0;
+          document.getElementById('statNewToday').textContent = data.stats.newToday || 0;
+          document.getElementById('statSessions').textContent = data.stats.activeSessions || 0;
+          document.getElementById('statFailed').textContent = data.stats.failedToday || 0;
+          document.getElementById('statBlocked').textContent = data.stats.blockedIps || 0;
+          return true;
+        }
+      } catch (e) {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('notFoundPage').style.display = 'block';
+        return false;
+      }
+    }
+
+    async function loadLogs(page = 1) {
+      currentPage = page;
+      const params = new URLSearchParams({ page, limit: 50 });
+
+      const dateFrom = document.getElementById('filterDateFrom').value;
+      const dateTo = document.getElementById('filterDateTo').value;
+      const action = document.getElementById('filterAction').value;
+      const risk = document.getElementById('filterRisk').value;
+      const email = document.getElementById('filterEmail').value;
+
+      if (dateFrom) params.append('date_from', dateFrom);
+      if (dateTo) params.append('date_to', dateTo);
+      if (action) params.append('action', action);
+      if (risk) params.append('risk_level', risk);
+      if (email) params.append('email', email);
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/logs?${params}`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.success) {
+          const tbody = document.getElementById('logsBody');
+          if (data.logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">لا توجد سجلات</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = data.logs.map(log => `
+            <tr>
+              <td>${new Date(log.created_at).toLocaleString('ar')}</td>
+              <td>${log.users?.username || log.users?.email || '-'}</td>
+              <td>${log.action}</td>
+              <td style="font-family:monospace;font-size:12px;">${log.ip_address || '-'}</td>
+              <td>${log.country || '-'}</td>
+              <td>${log.device_type || '-'}</td>
+              <td class="risk-${log.risk_level}">${log.risk_level}</td>
+            </tr>
+          `).join('');
+
+          // Pagination
+          const totalPages = Math.ceil(data.total / 50);
+          const paginationEl = document.getElementById('pagination');
+          paginationEl.innerHTML = '';
+          for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            if (i === currentPage) btn.classList.add('active');
+            btn.onclick = () => loadLogs(i);
+            paginationEl.appendChild(btn);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading logs:', e);
+      }
+    }
+
+    (async () => {
+      const isAdmin = await checkAdmin();
+      if (isAdmin) loadLogs();
+    })();
+  </script>
+</body>
+</html>
