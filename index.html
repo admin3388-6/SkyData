@@ -93,6 +93,7 @@
             overflow: hidden;
         }
 
+        /* --- الإصلاح الجذري للوحات --- */
         .panel {
             width: 100%;
             height: 100%;
@@ -101,18 +102,27 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, visibility 0.4s;
+            transition: all 0.4s ease-in-out;
             position: absolute;
             top: 0; left: 0;
             overflow-y: auto;
+            
+            /* كل اللوحات مخفية تماماً بشكل افتراضي */
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: scale(0.95);
         }
 
-        /* تعديل جوهري لمنع التداخل باستخدام visibility */
-        #main-panel { transform: translateX(0); opacity: 1; visibility: visible; }
-        #login-panel { transform: translateX(100%); opacity: 0; pointer-events: none; visibility: hidden; }
-        #register-panel { transform: translateX(-100%); opacity: 0; pointer-events: none; visibility: hidden; }
-
-        .active-panel { transform: translateX(0) !important; opacity: 1 !important; pointer-events: all !important; z-index: 20; visibility: visible !important; }
+        /* اللوحة النشطة فقط هي من تظهر */
+        .active-panel {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: all !important;
+            transform: scale(1) !important;
+            z-index: 20;
+        }
+        /* --------------------------------- */
 
         h1 { font-size: 26px; font-weight: 900; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--neon-green); text-align: center;}
 
@@ -356,7 +366,6 @@
             submitBtn.disabled = true;
 
             try {
-                // ملاحظة: هذا الطلب سيفشل بـ "Server connection error" إذا لم تكن قد رفعت مجلد api إلى Vercel
                 const response = await fetch('/api/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
