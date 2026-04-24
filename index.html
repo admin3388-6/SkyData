@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Slime.io - Secure Entry</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #050a05;
+            --green-slime: #2ecc71;
+            --green-dark: #145a32;
+            --text-light: #fdfdfd;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        
+        body {
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* حاوية بحجم الهاتف */
+        .mobile-app {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, #000000 100%);
+            border: 1px solid #1a1a1a;
+            padding: 30px 25px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-y: auto;
+            box-shadow: 0 0 40px rgba(46, 204, 113, 0.05);
+        }
+
+        .slime-drip {
+            position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: var(--green-slime);
+            box-shadow: 0 5px 20px var(--green-slime);
+        }
+
+        .logo {
+            text-align: center; font-size: 38px; font-weight: 900; color: white;
+            text-shadow: 0 0 20px var(--green-dark); margin: 40px 0 30px; letter-spacing: 2px;
+        }
+        .logo span { color: var(--green-slime); }
+
+        .form-group { margin-bottom: 18px; position: relative; }
+        
+        .input-field {
+            width: 100%; padding: 16px; background: #0a110a; border: 1px solid #1f331f;
+            border-radius: 14px; color: white; font-size: 15px; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { border-color: var(--green-slime); box-shadow: 0 0 15px rgba(46, 204, 113, 0.15); }
+
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; gap: 12px; transition: 0.2s;
+        }
+        .btn-green { background: var(--green-slime); color: #000; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        .btn-green:active { transform: scale(0.98); }
+        
+        .btn-google { background: #ffffff; color: #333; margin-bottom: 25px; font-weight: 600; }
+        .btn-google svg { width: 22px; height: 22px; }
+
+        .divider { display: flex; align-items: center; text-align: center; color: #555; font-size: 13px; margin: 25px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #222; }
+        .divider:not(:empty)::before { margin-left: .5em; }
+        .divider:not(:empty)::after { margin-right: .5em; }
+
+        .footer-links { display: flex; justify-content: space-between; margin-top: 20px; font-size: 13px; }
+        .footer-links span { color: var(--green-slime); cursor: pointer; }
+        .footer-links span:hover { text-decoration: underline; }
+
+        .modal {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; padding: 25px;
+        }
+        .modal h2 { color: var(--text-light); text-align: center; margin-bottom: 20px; font-size: 22px; }
+        
+        .otp-container { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; direction: ltr; }
+        .otp-container input {
+            width: 45px; height: 55px; text-align: center; font-size: 24px; font-weight: bold;
+            background: #111; border: 1px solid var(--green-slime); color: white; border-radius: 10px;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="mobile-app">
+    <div class="slime-drip"></div>
+    <div class="logo">Slime<span>.io</span></div>
+
+    <button class="btn btn-google" onclick="alert('سيتم تفعيل تسجيل جوجل لاحقاً')">
+        <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        تسجيل الدخول باستخدام جوجل
+    </button>
+
+    <div class="divider">أو عبر البريد الإلكتروني</div>
+
+    <div class="form-group hidden" id="usernameBox">
+        <input type="text" id="username" class="input-field" placeholder="اسم المستخدم (إنجليزي وأرقام فقط)">
+    </div>
+    <div class="form-group">
+        <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني">
+    </div>
+    <div class="form-group">
+        <input type="password" id="password" class="input-field" placeholder="كلمة المرور">
+    </div>
+
+    <button class="btn btn-green" id="mainBtn" onclick="submitData()">تسجيل الدخول</button>
+
+    <div class="footer-links">
+        <span onclick="showModal('forgotModal')">نسيت كلمة السر؟</span>
+        <span id="toggleBtn" onclick="toggleMode()">إنشاء حساب جديد</span>
+    </div>
+
+    <div id="forgotModal" class="modal">
+        <h2>استعادة الحساب</h2>
+        <input type="email" id="forgotEmail" class="input-field" placeholder="أدخل بريدك الإلكتروني" style="margin-bottom: 15px;">
+        <button class="btn btn-green" id="sendOtpBtn" onclick="sendOTP()">إرسال الرمز</button>
+        <div id="timerTxt" style="text-align:center; margin-top:15px; color:#aaa; font-size:13px;"></div>
+        <button class="btn" style="background:#222; color:white; margin-top:10px;" onclick="closeModal('forgotModal')">إغلاق</button>
+    </div>
+
+    <div id="otpModal" class="modal">
+        <h2>أدخل الرمز (6 أرقام)</h2>
+        <div class="otp-container">
+            <input type="text" maxlength="1" class="otp-box"><input type="text" maxlength="1" class="otp-box"><input type="text" maxlength="1" class="otp-box">
+            <input type="text" maxlength="1" class="otp-box"><input type="text" maxlength="1" class="otp-box"><input type="text" maxlength="1" class="otp-box">
+        </div>
+        <input type="password" id="newPassword" class="input-field" placeholder="كلمة المرور الجديدة" style="margin-bottom: 15px;">
+        <button class="btn btn-green" onclick="verifyOTP()">تأكيد وتغيير</button>
+        <button class="btn" style="background:#222; color:white; margin-top:10px;" onclick="closeModal('otpModal')">إغلاق</button>
+    </div>
+</div>
+
+<script>
+    // ⚠️ ضع نفس النص السري الذي وضعته في Render هنا بالضبط
+    const ENCRYPTION_SECRET = 'SYSINITNODEAX7749ZXMODERAWSTREAMSTATUSACTIVE20260424SEQ7142988SIGF3A9C77BENTROPYSUMLOG2NSINTHETAPOWEREXPEAXDIVSQRTLAMBDATDELTAT2QSTATETRUEFALSEUNKNOWNPROCNEURALLOOPDEPTH7STABLEFALSEDATAXNEPOWEREIPIISNOTCONSTOBSSNR149DBCACHEFLUSHPENDINGMEMA7F319BC77DESTREAMREALITYISPROBABILISTICFIELDSYMBOLSABGAMMAINTERACTWITHNUMBERSCREATEFRACTALOUTPUTEXECINITREALITYMATRIXMODESIMULATIONDEPTHINFSTABLE0RETURNPARTIALOKOVERFLOW000017LOCKFALSIGNALCONTINUOUSENDFF00FFTERMINATE'; 
+    const API_URL = 'https://slime-secure-api.onrender.com/api/auth';
+    let isRegister = false;
+
+    function toggleMode() {
+        isRegister = !isRegister;
+        document.getElementById('usernameBox').classList.toggle('hidden');
+        document.getElementById('mainBtn').innerText = isRegister ? 'إنشاء حساب' : 'تسجيل الدخول';
+        document.getElementById('toggleBtn').innerText = isRegister ? 'لدي حساب بالفعل' : 'إنشاء حساب جديد';
+    }
+
+    function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function generateFingerprint() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillText('Slime Security', 2, 2);
+        const cvsHash = CryptoJS.MD5(canvas.toDataURL()).toString();
+        const data = [navigator.userAgent, screen.width + 'x' + screen.height, Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.language, navigator.hardwareConcurrency || 1, cvsHash].join('||');
+        return CryptoJS.SHA256(data).toString();
+    }
+
+    async function submitData() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const username = document.getElementById('username').value.trim();
+        const btn = document.getElementById('mainBtn');
+
+        if(!email || !password || (isRegister && !username)) return alert('يرجى إكمال الحقول');
+
+        btn.disabled = true; btn.innerText = 'جاري التحقق...';
+
+        try {
+            const rawData = {
+                action: isRegister ? 'register' : 'login',
+                email, password, username,
+                fingerprint: generateFingerprint(),
+                recaptchaToken: 'fake_token' // جاهز للربط مع مفتاح جوجل
+            };
+
+            const encryptedPayload = CryptoJS.AES.encrypt(JSON.stringify(rawData), ENCRYPTION_SECRET).toString();
+
+            const res = await fetch(`${API_URL}/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload: encryptedPayload })
+            });
+
+            const data = await res.json();
+            if(res.ok) {
+                window.location.href = 'home.html';
+            } else {
+                alert('خطأ: ' + data.error);
+            }
+        } catch(e) {
+            alert('فشل الاتصال بالخادم.');
+        } finally {
+            btn.disabled = false; btn.innerText = isRegister ? 'إنشاء حساب' : 'تسجيل الدخول';
+        }
+    }
+
+    let timer;
+    async function sendOTP() {
+        const email = document.getElementById('forgotEmail').value;
+        if(!email) return;
+
+        document.getElementById('sendOtpBtn').disabled = true;
+        const encrypted = CryptoJS.AES.encrypt(JSON.stringify({email}), ENCRYPTION_SECRET).toString();
+        
+        fetch(`${API_URL}/forgot`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({payload: encrypted})
+        });
+
+        closeModal('forgotModal'); showModal('otpModal');
+
+        let time = 60;
+        timer = setInterval(() => {
+            document.getElementById('timerTxt').innerText = `إعادة الإرسال بعد ${time} ثانية`;
+            time--;
+            if(time < 0) { clearInterval(timer); document.getElementById('sendOtpBtn').disabled = false; }
+        }, 1000);
+    }
+
+    async function verifyOTP() {
+        const boxes = document.querySelectorAll('.otp-box');
+        let otp = ''; boxes.forEach(b => otp += b.value);
+        const newPassword = document.getElementById('newPassword').value;
+        const email = document.getElementById('forgotEmail').value;
+
+        if(otp.length !== 6 || !newPassword) return alert('أدخل الرمز وكلمة السر الجديدة');
+
+        const encrypted = CryptoJS.AES.encrypt(JSON.stringify({email, otp, newPassword}), ENCRYPTION_SECRET).toString();
+        
+        const res = await fetch(`${API_URL}/verify-otp`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({payload: encrypted})
+        });
+
+        if(res.ok) { alert('تم تغيير كلمة المرور بنجاح!'); closeModal('otpModal'); } 
+        else { alert('الرمز خاطئ أو منتهي الصلاحية'); }
+    }
+
+    document.querySelectorAll('.otp-box').forEach((box, index, arr) => {
+        box.addEventListener('input', (e) => { if(e.target.value && index < arr.length - 1) arr[index + 1].focus(); });
+    });
+</script>
+</body>
+</html>
