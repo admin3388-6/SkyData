@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SkyData Auth</title>
+    <title>SkyData Auth | منصة التحقق</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    
     <style>
         :root {
             --neon-green: #00ffcc;
@@ -18,57 +16,27 @@
             --text-muted: #a0a0a0;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Orbitron', sans-serif;
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Orbitron', sans-serif; user-select: none; }
 
         body {
             background: radial-gradient(circle at center, var(--dark-green) 0%, var(--bg-black) 100%);
             color: var(--text-main);
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
+            height: 100vh; width: 100vw;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
         }
 
+        /* شبكة الخلفية */
         body::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(var(--glass-border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.1;
-            z-index: 0;
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(var(--glass-border) 1px, transparent 1px), linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+            background-size: 40px 40px; opacity: 0.1; z-index: 0;
         }
 
         #landscape-lock {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bg-black);
-            z-index: 9999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        #landscape-lock svg { width: 60px; height: 60px; fill: var(--neon-green); margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
-
-        @keyframes rotatePhone {
-            0% { transform: rotate(0deg); }
-            50% { transform: rotate(-90deg); }
-            100% { transform: rotate(-90deg); }
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-black); z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
 
         @media screen and (orientation: portrait) {
@@ -77,323 +45,144 @@
         }
 
         .auth-container {
-            position: relative;
-            z-index: 10;
-            width: 90%;
-            max-width: 800px;
-            height: 90%;
-            max-height: 450px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
-            display: flex;
-            overflow: hidden;
+            position: relative; z-index: 10;
+            width: 90%; max-width: 800px; height: 90%; max-height: 450px;
+            background: var(--glass-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            display: flex; overflow: hidden;
         }
 
-        /* --- الإصلاح الجذري للوحات --- */
         .panel {
-            width: 100%;
-            height: 100%;
-            padding: 30px 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.4s ease-in-out;
-            position: absolute;
-            top: 0; left: 0;
-            overflow-y: auto;
-            
-            /* كل اللوحات مخفية تماماً بشكل افتراضي */
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: scale(0.95);
+            width: 100%; height: 100%; padding: 30px 40px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: all 0.4s ease-in-out; position: absolute; top: 0; left: 0;
+            opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95);
         }
 
-        /* اللوحة النشطة فقط هي من تظهر */
-        .active-panel {
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: all !important;
-            transform: scale(1) !important;
-            z-index: 20;
-        }
-        /* --------------------------------- */
+        .active-panel { opacity: 1; visibility: visible; pointer-events: all; transform: scale(1); z-index: 20; }
 
-        h1 { font-size: 26px; font-weight: 900; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px var(--neon-green); text-align: center;}
+        h1 { font-size: 26px; margin-bottom: 25px; text-transform: uppercase; text-shadow: 0 0 10px var(--neon-green); }
 
         .btn {
-            width: 100%;
-            max-width: 320px;
-            padding: 12px 20px;
-            margin-bottom: 12px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--glass-border);
-            color: var(--text-main);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            transition: all 0.3s ease;
+            width: 100%; max-width: 320px; padding: 12px 20px; margin-bottom: 12px;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid var(--glass-border);
+            color: var(--text-main); border-radius: 8px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px;
+            transition: 0.3s;
         }
 
         .btn:hover { background: var(--glass-border); box-shadow: 0 0 15px var(--glass-border); transform: translateY(-2px); }
-        
         .btn-outline { background: transparent; border: 1px dashed var(--neon-green); color: var(--neon-green); }
-        .btn-outline:hover { background: rgba(0, 255, 204, 0.1); }
 
-        .btn svg { width: 20px; height: 20px; fill: currentColor; }
-
-        .input-group { width: 100%; max-width: 320px; margin-bottom: 12px; position: relative; }
+        .input-group { width: 100%; max-width: 320px; margin-bottom: 12px; }
         .input-group input {
             width: 100%; padding: 10px 15px; background: rgba(0, 0, 0, 0.4); border: 1px solid #333;
-            color: white; border-radius: 6px; outline: none; font-family: sans-serif; transition: 0.3s;
+            color: white; border-radius: 6px; outline: none; transition: 0.3s; text-align: left;
         }
         .input-group input:focus { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0, 255, 204, 0.2); }
-        
-        .link { color: var(--neon-green); font-size: 12px; cursor: pointer; text-decoration: none; margin-top: 10px; transition: 0.3s; }
-        .link:hover { text-shadow: 0 0 8px var(--neon-green); }
 
-        .back-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold;}
-        .back-btn:hover { color: var(--neon-green); }
-
-        .recaptcha-container {
-            transform: scale(0.85);
-            transform-origin: center;
-            margin-bottom: 10px;
-        }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="landscape-lock">
-        <svg viewBox="0 0 24 24"><path d="M16 1H8C6.9 1 6 1.9 6 3V21C6 22.1 6.9 23 8 23H16C17.1 23 18 22.1 18 21V3C18 1.9 17.1 1 16 1ZM16 19H8V5H16V19ZM13.5 21H10.5V20H13.5V21Z"/></svg>
-        <h2 style="color: var(--neon-green); font-size: 1.2rem;">LANDSCAPE REQUIRED</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">Rotate your device to access the platform.</p>
+        <h2 style="color: var(--neon-green);">يرجى تدوير الهاتف</h2>
+        <p style="color: var(--text-muted); margin-top: 10px;">يتطلب النظام الوضع الأفقي للعمل.</p>
     </div>
 
     <div class="auth-container">
-        
         <div id="main-panel" class="panel active-panel">
             <h1>SKYDATA AUTH</h1>
-            
-            <button class="btn" id="btn-google-login">
-                <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                SIGN IN WITH GOOGLE
-            </button>
-
-            <button class="btn" onclick="switchPanel('login-panel')">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/></svg>
-                SIGN IN WITH EMAIL
-            </button>
-
-            <button class="btn btn-outline" onclick="switchPanel('register-panel')">
-                CREATE NEW ACCOUNT
-            </button>
+            <button class="btn" id="btn-google-login">دخول عبر جوجل</button>
+            <button class="btn" onclick="switchPanel('login-panel')">دخول عبر البريد</button>
+            <button class="btn btn-outline" onclick="switchPanel('register-panel')">إنشاء حساب جديد</button>
         </div>
 
         <div id="login-panel" class="panel">
-            <button class="back-btn" onclick="switchPanel('main-panel')">◀ BACK</button>
-            <h1>SYSTEM LOGIN</h1>
-            
-            <div class="input-group">
-                <input type="email" id="login-email" placeholder="Email Address" required>
-            </div>
-            <div class="input-group">
-                <input type="password" id="login-password" placeholder="Password" required>
-            </div>
-            
-            <div class="recaptcha-container">
-                <div class="g-recaptcha" data-sitekey="6LfGbsgsAAAAAAPUV_A3RNQzm8bKXg6IGmJDINZB" data-theme="dark"></div>
-            </div>
-
-            <button class="btn" id="btn-submit-login" style="background: var(--neon-green); color: var(--bg-black);">AUTHENTICATE</button>
-            
-            <a class="link" onclick="alert('Forgot password logic in Phase 4')">Forgot Password?</a>
+            <button class="back-btn" onclick="switchPanel('main-panel')">◀ رجوع</button>
+            <h1>تسجيل الدخول</h1>
+            <div class="input-group"><input type="email" id="login-email" placeholder="البريد الإلكتروني"></div>
+            <div class="input-group"><input type="password" id="login-password" placeholder="كلمة المرور"></div>
+            <button class="btn" id="btn-submit-login" style="background: var(--neon-green); color: #000;">دخول النظام</button>
         </div>
 
         <div id="register-panel" class="panel">
-            <button class="back-btn" onclick="switchPanel('main-panel')">◀ BACK</button>
-            <h1 style="font-size: 22px;">INITIALIZE ACCOUNT</h1>
-            
+            <button class="back-btn" onclick="switchPanel('main-panel')">◀ رجوع</button>
+            <h1>إنشاء حساب</h1>
             <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
-                <div class="input-group"><input type="text" id="register-username" placeholder="Username" required></div>
-                <div class="input-group"><input type="email" id="register-email" placeholder="Email Address" required></div>
+                <div class="input-group"><input type="text" id="register-username" placeholder="اسم المستخدم"></div>
+                <div class="input-group"><input type="email" id="register-email" placeholder="البريد"></div>
             </div>
-            
             <div style="display: flex; gap: 10px; width: 100%; max-width: 320px;">
-                <div class="input-group"><input type="password" id="register-password" placeholder="Password" required></div>
-                <div class="input-group"><input type="password" id="register-confirm" placeholder="Confirm" required></div>
+                <div class="input-group"><input type="password" id="register-password" placeholder="كلمة المرور"></div>
+                <div class="input-group"><input type="password" id="register-confirm" placeholder="تأكيد"></div>
             </div>
-
-            <div class="recaptcha-container">
-                <div class="g-recaptcha" data-sitekey="6LfGbsgsAAAAAAPUV_A3RNQzm8bKXg6IGmJDINZB" data-theme="dark"></div>
-            </div>
-
-            <label style="font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; margin-bottom: 10px; max-width: 320px; text-align: left;">
-                <input type="checkbox" id="register-terms" required> I agree to the Terms of Service and Privacy Policy
+            <label style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">
+                <input type="checkbox" id="register-terms"> أوافق على الشروط والخصوصية
             </label>
-
-            <button class="btn" id="btn-submit-register" style="background: var(--neon-green); color: var(--bg-black);">DEPLOY ACCOUNT</button>
+            <button class="btn" id="btn-submit-register" style="background: var(--neon-green); color: #000;">تفعيل الحساب</button>
         </div>
-
     </div>
 
     <script>
-        function switchPanel(targetId) {
-            document.querySelectorAll('.panel').forEach(panel => {
-                panel.classList.remove('active-panel');
-            });
-            document.getElementById(targetId).classList.add('active-panel');
+        function switchPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-panel'));
+            document.getElementById(id).classList.add('active-panel');
         }
 
-        window.showToast = function(message, type = 'warning') {
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed; top: 20px; right: -350px;
-                background: ${type === 'error' ? '#ff0033' : type === 'success' ? 'var(--neon-green)' : '#ffcc00'};
-                color: ${type === 'success' ? 'var(--bg-black)' : '#fff'};
-                padding: 15px 25px; border-radius: 8px; font-weight: bold; font-family: sans-serif; font-size: 14px;
-                transition: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-                z-index: 10000; box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            `;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => toast.style.right = '20px', 10);
-            setTimeout(() => {
-                toast.style.right = '-350px';
-                setTimeout(() => toast.remove(), 500);
-            }, 5000);
-        }
-
-        let typingTimer;
-        const usernameInput = document.querySelector('#register-username');
-        
-        usernameInput.addEventListener('keyup', () => {
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(validateUsername, 500); 
-        });
-
-        async function validateUsername() {
-            const username = usernameInput.value;
-            if(!username) {
-                usernameInput.style.borderColor = '#333';
-                return;
-            }
-
-            const regex = /^[a-zA-Z0-9]{3,20}$/;
-            if (!regex.test(username)) {
-                usernameInput.style.borderColor = 'red';
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://www.purgomalum.com/service/containsprofanity?text=${username}`);
-                const isProfane = await response.text();
-                
-                if (isProfane === 'true') {
-                    usernameInput.style.borderColor = 'red';
-                    showToast('Username contains inappropriate words', 'error');
-                } else {
-                    usernameInput.style.borderColor = 'var(--neon-green)';
-                }
-            } catch (e) {
-                console.error('Profanity API error', e);
-            }
+        window.showToast = (msg, type) => {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;top:20px;right:20px;background:${type==='error'?'#f03':'#0fc'};color:#000;padding:15px;border-radius:8px;z-index:10000;font-weight:bold;`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
         }
     </script>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        const supabase = createClient('https://fkdcbrkokzfwluzrrshb.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrZGNicmtva3pmd2x1enJyc2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzE2NTUsImV4cCI6MjA5MjYwNzY1NX0.cDk3vsFLpZR_rZBq8d_cZZYEXnJIcImz5yuYIDYoZdY');
 
-        const supabaseUrl = 'https://fkdcbrkokzfwluzrrshb.supabase.co';
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZrZGNicmtva3pmd2x1enJyc2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzE2NTUsImV4cCI6MjA5MjYwNzY1NX0.cDk3vsFLpZR_rZBq8d_cZZYEXnJIcImz5yuYIDYoZdY';
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin + '/home.html'
-                }
-            });
-            if (error) window.showToast(error.message, 'error');
-        });
-
-        async function handleEmailAuth(type) {
-            let payload = { action: type };
-            
-            const recaptchaTokens = document.querySelectorAll('.g-recaptcha-response');
-            let token = '';
-            recaptchaTokens.forEach(el => {
-                if(el.value) token = el.value;
-            });
-
-            if (type === 'login') {
-                payload.email = document.getElementById('login-email').value;
-                payload.password = document.getElementById('login-password').value;
-                payload.captchaToken = token;
-                
-                if(!payload.email || !payload.password) return window.showToast('Please fill all fields', 'error');
-            
-            } else if (type === 'register') {
-                payload.username = document.getElementById('register-username').value;
-                payload.email = document.getElementById('register-email').value;
-                payload.password = document.getElementById('register-password').value;
-                payload.captchaToken = token;
-                
-                const confirmPass = document.getElementById('register-confirm').value;
-                const terms = document.getElementById('register-terms').checked;
-
-                if(!payload.username || !payload.email || !payload.password) return window.showToast('Please fill all fields', 'error');
-                if(payload.password !== confirmPass) return window.showToast('Passwords do not match', 'error');
-                if(!terms) return window.showToast('You must agree to the Terms', 'error');
-            }
-
-            const submitBtn = document.getElementById(type === 'login' ? 'btn-submit-login' : 'btn-submit-register');
-            const originalText = submitBtn.innerText;
-            submitBtn.innerText = 'PROCESSING...';
-            submitBtn.style.opacity = '0.7';
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch('/api/auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    window.showToast('Authentication Successful!', 'success');
-                    setTimeout(() => {
-                        window.location.href = '/home.html';
-                    }, 1000);
-                } else {
-                    window.showToast(result.error || 'Authentication failed', 'error');
-                    if(window.grecaptcha) grecaptcha.reset();
-                }
-            } catch (error) {
-                window.showToast('Server connection error', 'error');
-            } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.style.opacity = '1';
-                submitBtn.disabled = false;
-            }
+        document.getElementById('btn-google-login').onclick = async () => {
+            await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/home.html' } });
         }
 
-        document.getElementById('btn-submit-login').addEventListener('click', () => handleEmailAuth('login'));
-        document.getElementById('btn-submit-register').addEventListener('click', () => handleEmailAuth('register'));
+        async function auth(type) {
+            const btn = document.getElementById(type === 'login' ? 'btn-submit-login' : 'btn-submit-register');
+            const data = type === 'login' ? {
+                action: 'login',
+                email: document.getElementById('login-email').value,
+                password: document.getElementById('login-password').value
+            } : {
+                action: 'register',
+                username: document.getElementById('register-username').value,
+                email: document.getElementById('register-email').value,
+                password: document.getElementById('register-password').value,
+                confirm: document.getElementById('register-confirm').value,
+                terms: document.getElementById('register-terms').checked
+            };
+
+            if (type === 'register' && data.password !== data.confirm) return showToast('كلمات المرور غير متطابقة', 'error');
+
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('تمت العملية بنجاح!', 'success');
+                    setTimeout(() => location.href = '/home.html', 1000);
+                } else showToast(result.error, 'error');
+            } catch (e) { showToast('خطأ في الاتصال بالخادم', 'error'); }
+            btn.disabled = false;
+        }
+
+        document.getElementById('btn-submit-login').onclick = () => auth('login');
+        document.getElementById('btn-submit-register').onclick = () => auth('register');
     </script>
 </body>
 </html>
