@@ -8,7 +8,7 @@
   <  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+  <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
   
   <style>
 
@@ -1625,51 +1625,35 @@ function handleRegister(e) {
     }
 
     function renderRecaptcha(containerId, widgetName) {
-      if (!recaptchaLoaded || !CONFIG.RECAPTCHA_SITE_KEY) return;
-      
-      var container = document.getElementById(containerId);
-      if (!container) return;
-      
-      container.innerHTML = '';
-      
-      if (recaptchaWidgets[widgetName]) return;
-      
-      try {
-        var widgetId = grecaptcha.render(containerId, {
-          sitekey: CONFIG.RECAPTCHA_SITE_KEY,
-          theme: 'dark',
-          size: 'compact',
-          callback: function(token) {
-            console.log(widgetName + ' solved:', token.substring(0, 20) + '...');
-          },
-          'expired-callback': function() {
-            console.log(widgetName + ' expired');
-            recaptchaWidgets[widgetName] = null;
-          }
-        });
-        recaptchaWidgets[widgetName] = widgetId;
-      } catch (e) {
-        console.error('reCAPTCHA render error:', e);
+  if (!recaptchaLoaded || !CONFIG.RECAPTCHA_SITE_KEY) return;
+  
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  
+  // ✅ تحقق أولاً، لا تمسح!
+  if (recaptchaWidgets[widgetName] !== undefined) {
+    grecaptcha.reset(recaptchaWidgets[widgetName]);
+    return;
+  }
+  
+  try {
+    var widgetId = grecaptcha.render(containerId, {
+      sitekey: CONFIG.RECAPTCHA_SITE_KEY,
+      theme: 'dark',
+      size: 'compact',
+      callback: function(token) {
+        console.log(widgetName + ' solved');
+      },
+      'expired-callback': function() {
+        console.log(widgetName + ' expired');
       }
-    }
+    });
+    recaptchaWidgets[widgetName] = widgetId;
+  } catch (e) {
+    console.error('reCAPTCHA render error:', e);
+  }
+}
 
-    function getRecaptchaToken(widgetName) {
-      if (!recaptchaLoaded || !recaptchaWidgets[widgetName]) return null;
-      try {
-        return grecaptcha.getResponse(recaptchaWidgets[widgetName]);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function resetRecaptcha(widgetName) {
-      if (!recaptchaLoaded || !recaptchaWidgets[widgetName]) return;
-      try {
-        grecaptcha.reset(recaptchaWidgets[widgetName]);
-      } catch (e) {
-        console.error('reCAPTCHA reset error:', e);
-      }
-    }
 
     window.onRecaptchaLoad = onRecaptchaLoad;
 
