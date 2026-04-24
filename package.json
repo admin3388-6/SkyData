@@ -1,0 +1,12 @@
+{
+  "name": "skydata-auth",
+  "version": "1.0.0",
+  "description": "Serverless API for SkyData Authentication",
+  "main": "index.html",
+  "scripts": {
+    "start": "node api/auth.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  }
+}
