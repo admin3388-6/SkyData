@@ -238,6 +238,56 @@
             // Add active class to target
             document.getElementById(targetId).classList.add('active-panel');
         }
+        // استيراد مكتبة Supabase من CDN (للمتصفح)
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'YOUR_NEXT_PUBLIC_SUPABASE_URL'
+const supabaseAnonKey = 'YOUR_NEXT_PUBLIC_SUPABASE_ANON_KEY'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// 1. تسجيل الدخول عبر Google
+async function signInWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin + '/home.html'
+        }
+    })
+    if (error) showToast(error.message, 'error');
+}
+
+// 2. تسجيل الدخول بالبريد (عبر API الخاص بنا في Vercel)
+async function handleEmailAuth(type) {
+    const email = document.querySelector('#login-email').value;
+    const password = document.querySelector('#login-password').value;
+    
+    // إرسال الطلب إلى Vercel Serverless Function
+    const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            action: type, // 'login' or 'register'
+            email, 
+            password,
+            captchaToken: 'TOKEN_FROM_WIDGET' // سيتم ربطه في مرحلة reCAPTCHA
+        })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        showToast('Success! Redirecting...', 'success');
+        window.location.href = '/home.html';
+    } else {
+        showToast(result.error, 'error');
+    }
+}
+
+// دالة التنبيهات (Toast)
+function showToast(msg, type) {
+    console.log(`[${type.toUpperCase()}]: ${msg}`);
+    // هنا سنقوم بإضافة تصميم الـ Toast الجمالي في المرحلة القادمة
+}
+        
     </script>
 </body>
 </html>
