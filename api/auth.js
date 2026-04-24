@@ -33,20 +33,45 @@ function checkRateLimit(ip, action, maxAttempts = 5, windowMs = 600000) {
 }
 
 // التحقق من reCAPTCHA
+// في أعلى api/auth.js — استبدل دالة verifyRecaptcha القديمة بهذه
 async function verifyRecaptcha(token, secretKey, remoteIp) {
-  if (!token || token === 'dummy-token') return { success: false, error: 'Missing reCAPTCHA token' };
+  if (!token || token === 'dummy-token') {
+    return { success: false, error: 'Missing reCAPTCHA token' };
+  }
   
+  if (!secretKey) {
+    return { success: false, error: 'RECAPTCHA_SECRET_KEY not configured' };
+  }
+
   try {
+    const params = new URLSearchParams({
+      secret: secretKey,
+      response: token,
+      remoteip: remoteIp
+    });
+
     const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${secretKey}&response=${token}&remoteip=${remoteIp}`
+      body: params.toString()
     });
-    return await response.json();
+
+    const data = await response.json();
+
+    if (!data.success) {
+      return { 
+        success: false, 
+        error: 'reCAPTCHA verification failed',
+        codes: data['error-codes'] || []
+      };
+    }
+
+    return { success: true, hostname: data.hostname };
   } catch (err) {
     return { success: false, error: err.message };
   }
 }
+
 
 // تسجيل الأحداث الأمنية
 async function logSecurityEvent({ userId, action, ip, country, city, deviceInfo, status, details }) {
