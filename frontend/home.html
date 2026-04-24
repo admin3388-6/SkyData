@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الرئيسية - Secure Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(160deg, #0d5c2e, #2ecc71, #f0f0f0);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      direction: rtl;
+    }
+    .home-card {
+      background: rgba(255,255,255,0.95);
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    .home-card h1 { color: #1a5c2e; margin-bottom: 10px; }
+    .home-card p { color: #666; margin-bottom: 20px; }
+    .user-info { background: #f0faf4; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: right; }
+    .user-info p { color: #333; margin: 5px 0; font-size: 14px; }
+    .btn-logout {
+      padding: 12px 30px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-logout:hover { background: #b71c1c; }
+  </style>
+</head>
+<body>
+  <div class="home-card">
+    <h1>🎉 مرحباً!</h1>
+    <p>تم تسجيل الدخول بنجاح</p>
+    <div class="user-info" id="userInfo">
+      <p>جاري تحميل البيانات...</p>
+    </div>
+    <button class="btn-logout" id="logoutBtn">تسجيل الخروج</button>
+  </div>
+
+  <script>
+    const API_BASE = 'https://slime-secure-api.onrender.com';
+
+    async function loadUser() {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success) {
+          const u = data.user;
+          document.getElementById('userInfo').innerHTML = `
+            <p><strong>اسم المستخدم:</strong> ${u.username}</p>
+            <p><strong>البريد:</strong> ${u.email}</p>
+            <p><strong>المال:</strong> ${u.money || 0}</p>
+            <p><strong>الخبرة:</strong> ${u.xp || 0}</p>
+            <p><strong>تاريخ التسجيل:</strong> ${new Date(u.created_at).toLocaleDateString('ar')}</p>
+          `;
+        } else {
+          window.location.href = '/index.html';
+        }
+      } catch (e) {
+        window.location.href = '/index.html';
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (e) {}
+      window.location.href = '/index.html';
+    });
+
+    loadUser();
+  </script>
+</body>
+</html>
