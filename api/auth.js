@@ -1,21 +1,34 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js');
+
+// 1. فحص الأمان: منع تحطم الخادم إذا كانت المفاتيح مفقودة
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('CRITICAL ERROR: Supabase keys are missing in Vercel Environment Variables!');
+}
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder_key'
+);
 
-export default async function handler(req, res) {
+// 2. تصدير الدالة بالطريقة التي يفهمها Vercel
+module.exports = async function(req, res) {
+  // السماح بالاتصال من الواجهة الأمامية (CORS headers)
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+
+  // معالجة طلبات الفحص الأولي للمتصفح
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { action, email, password, captchaToken, username } = req.body;
 
   try {
-    // 1. التحقق من reCAPTCHA
-    // ملاحظة: قمنا بإضافة شرط لتجاوز التحقق إذا كنت تختبر محلياً لتسريع عملك
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (!isDevelopment) {
+    // التحقق من reCAPTCHA
+    if (process.env.NODE_ENV !== 'development') {
       if (!captchaToken) throw new Error('reCAPTCHA token is missing');
 
       const recaptchaRes = await fetch('https://www.google.com/recaptcha/api/siteverify', {
@@ -28,7 +41,7 @@ export default async function handler(req, res) {
       if (!recaptchaData.success) throw new Error('reCAPTCHA verification failed. Bot detected.');
     }
 
-    // 2. معالجة التسجيل
+    // معالجة التسجيل
     if (action === 'register') {
       const { data: existingUser } = await supabase
         .from('profiles')
@@ -48,7 +61,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, user: data.user });
 
     } 
-    // 3. معالجة تسجيل الدخول
+    // معالجة تسجيل الدخول
     else if (action === 'login') {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -62,4 +75,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(400).json({ success: false, error: error.message });
   }
-}
+};
