@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>SkyData — Gaming Auth</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+  
   <style>
+
     :root {
       --sky-green: #00ff88;
       --sky-green-dim: #00cc6a;
@@ -939,7 +942,7 @@
             <button type="button" onclick="switchToRegister()" class="form-link-alt">Create account</button>
           </div>
 
-          <div class="recaptcha-wrap" id="recaptchaLoginContainer"></div>
+          <div class="recaptcha-wrap" id="loginRecaptchaContainer"></div>
 
           <button type="submit" class="btn-primary mt-auto">SIGN IN</button>
         </form>
@@ -1027,7 +1030,7 @@
             <input type="password" id="regConfirmPassword" placeholder="Confirm password" class="sky-input">
           </div>
 
-          <div class="recaptcha-wrap" id="recaptchaRegContainer"></div>
+          <div class="recaptcha-wrap" id="registerRecaptchaContainer"></div>
 
           <label class="checkbox-wrap">
             <input type="checkbox" id="agreeTerms" class="sky-checkbox">
@@ -1368,76 +1371,104 @@
     }
 
     function handleLogin(e) {
-      e.preventDefault();
-      console.log('Login submitted');
-      var email = document.getElementById('loginEmail').value;
-      var password = document.getElementById('loginPassword').value;
-      
-      if (!validateEmail(email)) {
-        showToast('Invalid email format', 'error');
-        return;
-      }
+  e.preventDefault();
+  console.log('Login submitted');
+  
+  var email = document.getElementById('loginEmail').value;
+  var password = document.getElementById('loginPassword').value;
+  var recaptchaToken = getRecaptchaToken('loginRecaptcha');
+  
+  if (!validateEmail(email)) {
+    showToast('Invalid email format', 'error');
+    return;
+  }
+  
+  if (!recaptchaToken) {
+    showToast('Please complete the reCAPTCHA challenge', 'warning');
+    return;
+  }
 
-      var endpoint = CONFIG.API_URL ? CONFIG.API_URL + '/auth.js' : '/api/auth.js';
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email: email, password: password, recaptchaToken: 'dummy-token' })
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data.error) throw new Error(data.error);
-        showToast('Welcome back!', 'success');
-        setTimeout(function() { window.location.href = 'home.html'; }, 800);
-      })
-      .catch(function(err) {
-        showToast(err.message, 'error');
-      });
-    }
+  var endpoint = CONFIG.API_URL ? CONFIG.API_URL + '/auth.js' : '/api/auth.js';
+  
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      action: 'login', 
+      email: email, 
+      password: password, 
+      recaptchaToken: recaptchaToken 
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error);
+    showToast('Welcome back!', 'success');
+    setTimeout(function() { window.location.href = 'home.html'; }, 800);
+  })
+  .catch(function(err) {
+    showToast(err.message, 'error');
+    resetRecaptcha('loginRecaptcha');
+  });
+}
 
-    function handleRegister(e) {
-      e.preventDefault();
-      console.log('Register submitted');
-      var username = document.getElementById('regUsername').value;
-      var email = document.getElementById('regEmail').value;
-      var password = document.getElementById('regPassword').value;
-      var confirm = document.getElementById('regConfirmPassword').value;
-      
-      if (!/^[a-zA-Z0-9]{3,20}$/.test(username)) {
-        showToast('Invalid username', 'error'); return;
-      }
-      if (!validateEmail(email)) {
-        showToast('Invalid email', 'error'); return;
-      }
-      if (password.length < 6 || password.length > 25) {
-        showToast('Password must be 6-25 characters', 'error'); return;
-      }
-      if (!/[0-9!@#$%^&*]/.test(password)) {
-        showToast('Password must contain a number or symbol', 'error'); return;
-      }
-      if (password !== confirm) {
-        showToast('Passwords do not match', 'error'); return;
-      }
-      if (!document.getElementById('agreeTerms').checked) {
-        showToast('You must agree to the terms', 'warning'); return;
-      }
+function handleRegister(e) {
+  e.preventDefault();
+  console.log('Register submitted');
+  
+  var username = document.getElementById('regUsername').value;
+  var email = document.getElementById('regEmail').value;
+  var password = document.getElementById('regPassword').value;
+  var confirm = document.getElementById('regConfirmPassword').value;
+  var recaptchaToken = getRecaptchaToken('registerRecaptcha');
+  
+  if (!/^[a-zA-Z0-9]{3,20}$/.test(username)) {
+    showToast('Invalid username', 'error'); return;
+  }
+  if (!validateEmail(email)) {
+    showToast('Invalid email', 'error'); return;
+  }
+  if (password.length < 6 || password.length > 25) {
+    showToast('Password must be 6-25 characters', 'error'); return;
+  }
+  if (!/[0-9!@#$%^&*]/.test(password)) {
+    showToast('Password must contain a number or symbol', 'error'); return;
+  }
+  if (password !== confirm) {
+    showToast('Passwords do not match', 'error'); return;
+  }
+  if (!document.getElementById('agreeTerms').checked) {
+    showToast('You must agree to the terms', 'warning'); return;
+  }
+  if (!recaptchaToken) {
+    showToast('Please complete the reCAPTCHA challenge', 'warning');
+    return;
+  }
 
-      var endpoint = CONFIG.API_URL ? CONFIG.API_URL + '/auth.js' : '/api/auth.js';
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'register', email: email, password: password, username: username, recaptchaToken: 'dummy-token' })
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data.error) throw new Error(data.error);
-        showToast('Account created! Welcome to SkyData', 'success');
-        setTimeout(function() { window.location.href = 'home.html'; }, 1200);
-      })
-      .catch(function(err) {
-        showToast(err.message, 'error');
-      });
-    }
+  var endpoint = CONFIG.API_URL ? CONFIG.API_URL + '/auth.js' : '/api/auth.js';
+  
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      action: 'register', 
+      email: email, 
+      password: password, 
+      username: username, 
+      recaptchaToken: recaptchaToken 
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error);
+    showToast('Account created! Welcome to SkyData', 'success');
+    setTimeout(function() { window.location.href = 'home.html'; }, 1200);
+  })
+  .catch(function(err) {
+    showToast(err.message, 'error');
+    resetRecaptcha('registerRecaptcha');
+  });
+}
 
     // ==================== FORGOT PASSWORD ====================
     function showForgotModal() {
@@ -1578,6 +1609,81 @@
         showToast(err.message, 'error');
       });
     }
+    // (دوال استعادة كلمة المرور وغيرها موجودة هنا في الأعلى)
+
+    // ==================== reCAPTCHA MANAGEMENT ====================
+    var recaptchaWidgets = {};
+    var recaptchaLoaded = false;
+
+    function onRecaptchaLoad() {
+      recaptchaLoaded = true;
+      console.log('reCAPTCHA API loaded');
+      
+      // تم تصحيح الـ ID هنا ليتطابق مع الـ HTML الخاص بك
+      renderRecaptcha('recaptchaLoginContainer', 'loginRecaptcha');
+      renderRecaptcha('recaptchaRegContainer', 'registerRecaptcha');
+    }
+
+    function renderRecaptcha(containerId, widgetName) {
+      if (!recaptchaLoaded || !CONFIG.RECAPTCHA_SITE_KEY) return;
+      
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      if (recaptchaWidgets[widgetName]) return;
+      
+      try {
+        var widgetId = grecaptcha.render(containerId, {
+          sitekey: CONFIG.RECAPTCHA_SITE_KEY,
+          theme: 'dark',
+          size: 'compact',
+          callback: function(token) {
+            console.log(widgetName + ' solved:', token.substring(0, 20) + '...');
+          },
+          'expired-callback': function() {
+            console.log(widgetName + ' expired');
+            recaptchaWidgets[widgetName] = null;
+          }
+        });
+        recaptchaWidgets[widgetName] = widgetId;
+      } catch (e) {
+        console.error('reCAPTCHA render error:', e);
+      }
+    }
+
+    function getRecaptchaToken(widgetName) {
+      if (!recaptchaLoaded || !recaptchaWidgets[widgetName]) return null;
+      try {
+        return grecaptcha.getResponse(recaptchaWidgets[widgetName]);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function resetRecaptcha(widgetName) {
+      if (!recaptchaLoaded || !recaptchaWidgets[widgetName]) return;
+      try {
+        grecaptcha.reset(recaptchaWidgets[widgetName]);
+      } catch (e) {
+        console.error('reCAPTCHA reset error:', e);
+      }
+    }
+
+    window.onRecaptchaLoad = onRecaptchaLoad;
+
+    var originalShowPanel = showPanel;
+    showPanel = function(id) {
+      originalShowPanel(id);
+      if (id === 'loginPanel') {
+        setTimeout(function() { renderRecaptcha('recaptchaLoginContainer', 'loginRecaptcha'); }, 300);
+      }
+      if (id === 'registerPanel') {
+        setTimeout(function() { renderRecaptcha('recaptchaRegContainer', 'registerRecaptcha'); }, 300);
+      }
+    };
+
 
     // ==================== INIT ====================
     console.log('SkyData Auth loaded. All buttons ready.');
