@@ -1,42 +1,61 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-module.exports = async function(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+export default async function handler(req, res) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_DOMAIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'الطريقة غير مسموحة' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { action, email, password, username } = req.body;
+  const { action, email, password, username, recaptchaToken, fingerprint } = req.body;
+
+  // التحقق من reCAPTCHA
+  if (['register', 'login', 'reset'].includes(action)) {
+    const verifyRes = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`
+    });
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      return res.status(400).json({ error: 'reCAPTCHA verification failed' });
+    }
+  }
 
   try {
-    if (action === 'register') {
-      // التأكد من توفر اسم المستخدم
-      const { data: userExists } = await supabase.from('profiles').select('username').eq('username', username).single();
-      if (userExists) throw new Error('اسم المستخدم محجوز مسبقاً');
+    switch (action) {
+      case 'register': {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username, auth_method: 'email' }
+          }
+        });
+        if (error) throw error;
+        return res.status(200).json({ success: true, user: data.user });
+      }
 
-      // إنشاء الحساب
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { username, auth_method: 'email' } }
-      });
+      case 'login': {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
+        return res.status(200).json({ success: true, session: data.session });
+      }
 
-      if (error) throw error;
-      return res.status(200).json({ success: true });
-
-    } else if (action === 'login') {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      return res.status(200).json({ success: true, session: data.session });
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
     }
-  } catch (error) {
-    return res.status(400).json({ success: false, error: error.message });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
   }
-};
+}
